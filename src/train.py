@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 import joblib
 
 # Load data
-df = pd.read_csv("data/churn.csv")
+df = pd.read_csv("churn.csv")
 
 # Convert TotalCharges to numeric (common issue)
 df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
