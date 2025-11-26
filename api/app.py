@@ -2,8 +2,7 @@ from fastapi import FastAPI
 import joblib
 import pandas as pd
 
-# Load trained model
-model = joblib.load("models/model.pkl")   # models/model.pkl
+model = joblib.load("models/model.pkl")
 
 app = FastAPI(title="Churn Prediction API")
 
@@ -13,25 +12,32 @@ def home():
 
 @app.post("/predict")
 def predict(data: dict):
+    try:
+        df = pd.DataFrame([data])
 
-    # Convert the incoming JSON to DataFrame
-    df = pd.DataFrame([data])
+       
+        if "customerID" not in df.columns:
+            df["customerID"] = "0000-XYZ"
 
-    # Ensure column order matches training
-    df = df.reindex(columns=[
-        'gender', 'SeniorCitizen', 'Partner', 'Dependents', 'tenure',
-        'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
-        'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
-        'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod',
-        'MonthlyCharges', 'TotalCharges'
-    ], fill_value=0)
+        expected_cols = [
+            'customerID',   
+            'gender', 'SeniorCitizen', 'Partner', 'Dependents', 'tenure',
+            'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
+            'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+            'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod',
+            'MonthlyCharges', 'TotalCharges'
+        ]
 
-    # Predict
-    prediction = model.predict(df)[0]
-    probability = model.predict_proba(df)[0][1]
+        df = df.reindex(columns=expected_cols)
 
-    return {
-        "prediction": int(prediction),
-        "churn_probability": float(probability)
-    }
+        prediction = model.predict(df)[0]
+        prob = model.predict_proba(df)[0][1]
 
+        return {
+            "prediction": int(prediction),
+            "churn_probability": float(prob)
+        }
+
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "details": traceback.format_exc()}
