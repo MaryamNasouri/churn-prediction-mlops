@@ -1,45 +1,53 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 import joblib
 
-# Load data
-df = pd.read_csv("churn.csv")
+# Load dataset
+df = pd.read_csv("data/Churn.csv")
 
-# Convert TotalCharges to numeric (common issue)
+# Convert TotalCharges to numeric (dataset sometimes has spaces)
 df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
-df["TotalCharges"].fillna(df["TotalCharges"].median(), inplace=True)
+df = df.dropna(subset=["TotalCharges"])
 
-# Encode target
-df["Churn"] = df["Churn"].map({'Yes': 1, 'No': 0})
+# Target variable
+df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
 
-# Handle categorical columns
-categorical_cols = df.select_dtypes(include="object").columns
-
-encoder = LabelEncoder()
-for col in categorical_cols:
-    df[col] = encoder.fit_transform(df[col])
-
-# Split data
+# Separate X and y
 X = df.drop("Churn", axis=1)
 y = df["Churn"]
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+# Identify categorical and numeric columns
+categorical_cols = [
+    'customerID', 'gender', 'Partner', 'Dependents', 'PhoneService',
+    'MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBackup',
+    'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies',
+    'Contract', 'PaperlessBilling', 'PaymentMethod'
+]
+
+numeric_cols = ['SeniorCitizen', 'tenure', 'MonthlyCharges', 'TotalCharges']
+
+# Preprocessor
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("cat", OneHotEncoder(handle_unknown='ignore'), categorical_cols),
+        ("num", "passthrough", numeric_cols)
+    ]
 )
+
+# Build final ML pipeline
+pipeline = Pipeline(steps=[
+    ("preprocess", preprocessor),
+    ("model", RandomForestClassifier(n_estimators=200, random_state=42))
+])
 
 # Train model
-model = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=10,
-    random_state=42
-)
-model.fit(X_train, y_train)
+pipeline.fit(X, y)
 
-# Save trained model
-joblib.dump(model, "model.pkl")
+# Save final trained model (preprocessing + model)
+joblib.dump(pipeline, "models/model.pkl")
 
-print("Model trained and saved as model.pkl")
-
+print("Model training completed and saved successfully.")
