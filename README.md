@@ -1,4 +1,4 @@
-🌀 Churn Prediction — End-to-End ML + MLOps Project
+🌀 Churn Prediction — End-to-End ML Project
 
 A complete production-ready pipeline for customer churn prediction including data preprocessing, feature engineering, model training, evaluation, and API deployment using FastAPI.
 
